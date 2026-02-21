@@ -5,6 +5,8 @@ import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.barinventory.entity.StockroomInventory;
@@ -26,5 +28,12 @@ public interface StockroomInventoryRepository extends JpaRepository<StockroomInv
     @Modifying
     @Transactional
     void deleteBySessionSessionId(Long sessionId);
+    
+    
+ // Add this to StockroomInventoryRepository.java
+    @Query("SELECT s FROM StockroomInventory s " +
+           "WHERE s.session.sessionId = :sessionId")
+    List<StockroomInventory> findBySessionSessionIdWithProduct(
+            @Param("sessionId") Long sessionId);
     
 }

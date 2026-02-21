@@ -43,7 +43,12 @@ public interface InventorySessionRepository extends JpaRepository<InventorySessi
 	@Query("SELECT s FROM InventorySession s JOIN FETCH s.bar WHERE s.sessionId = :sessionId")
 	Optional<InventorySession> findByIdWithBar(@Param("sessionId") Long sessionId);
 	
-	
+	// Add this to InventorySessionRepository.java
+	@Query("SELECT s FROM InventorySession s " +
+	       "WHERE s.bar.barId = :barId " +
+	       "AND s.status = com.barinventory.enums.SessionStatus.COMPLETED " +
+	       "ORDER BY s.sessionEndTime DESC")
+	List<InventorySession> findCompletedSessionsByBar(@Param("barId") Long barId);
 
 
 }
