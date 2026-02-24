@@ -59,6 +59,11 @@ public class Bar {
     @OneToMany(mappedBy = "bar", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<BarWell> wells = new ArrayList<>();
     
+ // Add inside Bar.java
+    @OneToMany(mappedBy = "bar", fetch = FetchType.LAZY)
+    @JsonIgnore
+    private List<User> users = new ArrayList<>();
+    
     @OneToMany(mappedBy = "bar")
     @JsonIgnore  // ✅ Add this
     private List<InventorySession> sessions;
