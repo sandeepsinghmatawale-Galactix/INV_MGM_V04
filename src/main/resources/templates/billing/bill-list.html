@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>My Bills</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        body { background-color: #f8f9fa; }
+
+        /* ── Reused from bill-create ── */
+        .main-card {
+            border-radius: 18px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            border: none;
+        }
+        .header-title { font-weight: 700; color: #b91c1c; }
+
+        /* ── Reused from brand-list ── */
+        .table thead { background-color: #212529; color: white; }
+
+        /* ── Bill-list specific ── */
+        .bill-row { cursor: pointer; transition: background 0.15s; }
+        .bill-row:hover { background-color: #fff5f5 !important; }
+
+        .grand-total-col {
+            font-weight: 700;
+            color: #16a34a;
+        }
+
+        .badge-finalized { background-color: #16a34a !important; }
+        .badge-draft     { background-color: #d97706 !important; }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6c757d;
+        }
+        .empty-state .empty-icon {
+            font-size: 3.5rem;
+            margin-bottom: 16px;
+        }
+        .empty-state h5 { font-weight: 600; color: #495057; }
+
+        .stats-row .stat-card {
+            border-radius: 14px;
+            border: none;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+            padding: 18px 22px;
+        }
+        .stat-label { font-size: 0.78rem; color: #6c757d; text-transform: uppercase; letter-spacing: 0.05em; }
+        .stat-value { font-size: 1.6rem; font-weight: 700; margin-top: 4px; }
+    </style>
+</head>
+<body>
+
+<div class="container py-4">
+    <div class="card main-card p-4">
+
+        <!-- ── Header ── -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3 class="header-title">🧾 My Bills</h3>
+            <a th:href="@{/billing/bills/new}" class="btn btn-danger btn-sm px-3">
+                + New Bill
+            </a>
+        </div>
+
+        <hr>
+
+        <!-- ── Flash messages ── -->
+        <div th:if="${successMsg}"
+             class="alert alert-success alert-dismissible fade show" role="alert">
+            <span th:text="${successMsg}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        <div th:if="${errorMsg}"
+             class="alert alert-danger alert-dismissible fade show" role="alert">
+            <span th:text="${errorMsg}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <!-- ── Summary stat cards (only when bills exist) ── -->
+        <div th:if="${not #lists.isEmpty(bills)}"
+             class="row g-3 stats-row mb-4">
+
+            <!-- Total Bills -->
+            <div class="col-6 col-md-3">
+                <div class="stat-card bg-white">
+                    <div class="stat-label">Total Bills</div>
+                    <div class="stat-value text-dark"
+                         th:text="${#lists.size(bills)}">0</div>
+                </div>
+            </div>
+
+            <!-- Total Spent -->
+            <div class="col-6 col-md-3">
+                <div class="stat-card bg-white">
+                    <div class="stat-label">Total Spent</div>
+                    <div class="stat-value" style="color:#16a34a">
+                        ₹ <span th:text="${#numbers.formatDecimal(totalSpent, 1, 2)}">0.00</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Finalized -->
+            <div class="col-6 col-md-3">
+                <div class="stat-card bg-white">
+                    <div class="stat-label">Finalized</div>
+                    <div class="stat-value text-success"
+                         th:text="${bills.?[finalized == true].size()}">0</div>
+                </div>
+            </div>
+
+            <!-- Draft -->
+            <div class="col-6 col-md-3">
+                <div class="stat-card bg-white">
+                    <div class="stat-label">Draft</div>
+                    <div class="stat-value" style="color:#d97706"
+                         th:text="${bills.?[finalized == false].size()}">0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Empty state ── -->
+        <div th:if="${#lists.isEmpty(bills)}" class="empty-state">
+            <div class="empty-icon">🧾</div>
+            <h5>No bills yet</h5>
+            <p class="mb-3">You haven't created any bills. Start by adding items.</p>
+            <a th:href="@{/billing/bills/new}" class="btn btn-danger px-4">
+                + Create First Bill
+            </a>
+        </div>
+
+        <!-- ── Bills table ── -->
+        <div th:if="${not #lists.isEmpty(bills)}" class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Date &amp; Time</th>
+                        <th>Items</th>
+                        <th>Grand Total</th>
+                        <th>Status</th>
+                        <th class="text-end">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="bill-row"
+                        th:each="bill : ${bills}"
+                        th:onclick="|window.location.href='@{/billing/bills/}' + ${bill.billId}|">
+
+                        <td>
+                            <span class="fw-semibold"
+                                  th:text="'#' + ${bill.billId}">--</span>
+                        </td>
+
+                        <td th:text="${#temporals.format(bill.createdAt, 'dd MMM yyyy, hh:mm a')}">
+                            --
+                        </td>
+
+                        <td>
+                            <span class="badge bg-secondary"
+                                  th:text="${#lists.size(bill.items)} + ' item(s)'">
+                            </span>
+                        </td>
+
+                        <td class="grand-total-col">
+                            ₹ <span th:text="${#numbers.formatDecimal(bill.grandTotal, 1, 2)}">
+                                0.00
+                            </span>
+                        </td>
+
+                        <td>
+                            <span th:if="${bill.finalized}"
+                                  class="badge badge-finalized">✔ Finalized</span>
+                            <span th:unless="${bill.finalized}"
+                                  class="badge badge-draft">⏳ Draft</span>
+                        </td>
+
+                        <td class="text-end">
+                            <a th:href="@{/billing/bills/{id}(id=${bill.billId})}"
+                               class="btn btn-sm btn-outline-danger"
+                               onclick="event.stopPropagation()">
+                                View
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+    </div><!-- /card -->
+</div><!-- /container -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
